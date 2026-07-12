@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chata Games - Game Collection</title>
+    <title>Chata Games – Sbírka her</title>
     <style>
         * {
             margin: 0;
@@ -11,41 +11,90 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg-dark: #2b1a4e;
+            --bg-darker: #1d1138;
+            --accent: #f5a623;
+            --accent-soft: #ffd27f;
+            --card-bg: #362058;
+            --card-border: rgba(255, 210, 127, 0.25);
+            --text-light: #f3ecff;
+            --text-muted: #c9b8e8;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(180deg, #4a2a7a 0%, var(--bg-dark) 40%, var(--bg-darker) 100%);
             min-height: 100vh;
-            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .hero {
+            position: relative;
+            height: 420px;
+            background: url('assets/hero.webp') center 35% / cover no-repeat;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(29, 17, 56, 0.15) 0%, rgba(29, 17, 56, 0) 40%, rgba(74, 42, 122, 0.95) 100%);
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3.5em;
+            text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            margin-top: 6px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            color: var(--accent-soft);
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 60px;
-        }
-
-        h1 {
-            font-size: 3.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .subtitle {
-            font-size: 1.3em;
-            opacity: 0.95;
-            margin-bottom: 10px;
+            padding: 0 20px 40px;
         }
 
         .description {
+            text-align: center;
             font-size: 1.1em;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 20px auto 0;
+            color: var(--text-muted);
+            max-width: 640px;
+            margin: 30px auto 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 40px 0 50px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            color: var(--accent);
+        }
+
+        .stat-item p {
+            color: var(--text-muted);
         }
 
         .games-grid {
@@ -56,10 +105,11 @@
         }
 
         .game-card {
-            background: white;
-            border-radius: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -69,30 +119,54 @@
 
         .game-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55), 0 0 25px rgba(245, 166, 35, 0.15);
         }
 
-        .game-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
+        .game-art {
+            position: relative;
+            height: 210px;
+            overflow: hidden;
         }
 
-        .game-header h2 {
-            font-size: 1.8em;
-            margin-bottom: 8px;
+        .game-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 30%;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+
+        .game-card:hover .game-art img {
+            transform: scale(1.06);
+        }
+
+        .game-art::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(54, 32, 88, 0) 60%, rgba(54, 32, 88, 0.9) 100%);
+        }
+
+        .game-art h2 {
+            position: absolute;
+            bottom: 10px;
+            left: 16px;
+            right: 16px;
+            z-index: 1;
+            font-size: 1.5em;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
         }
 
         .game-content {
-            padding: 20px;
+            padding: 18px 20px 20px;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
 
         .game-content p {
-            color: #666;
+            color: var(--text-muted);
             margin-bottom: 15px;
             font-size: 0.95em;
             flex: 1;
@@ -107,67 +181,56 @@
         .btn {
             display: inline-block;
             padding: 10px 16px;
-            border-radius: 6px;
+            border-radius: 8px;
             text-decoration: none;
             font-size: 0.9em;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.2s ease;
             text-align: center;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--accent) 0%, #e2681f 100%);
+            color: #2b1a4e;
             flex: 1;
             min-width: 120px;
         }
 
         .btn-primary:hover {
-            opacity: 0.9;
+            filter: brightness(1.1);
             transform: scale(1.02);
         }
 
         .btn-secondary {
-            background: #f0f0f0;
-            color: #667eea;
-            border: 2px solid #667eea;
+            background: transparent;
+            color: var(--accent-soft);
+            border: 2px solid var(--accent-soft);
         }
 
         .btn-secondary:hover {
-            background: #667eea;
-            color: white;
+            background: var(--accent-soft);
+            color: #2b1a4e;
         }
 
         footer {
             text-align: center;
-            color: white;
+            color: var(--text-muted);
             padding-top: 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            opacity: 0.8;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
             font-size: 0.9em;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin: 40px 0;
-            text-align: center;
-            color: white;
-        }
-
-        .stat-item h3 {
-            font-size: 2.5em;
-            margin-bottom: 5px;
-        }
-
-        .stat-item p {
-            opacity: 0.9;
+        footer a {
+            color: var(--accent-soft);
         }
 
         @media (max-width: 768px) {
             h1 {
-                font-size: 2.5em;
+                font-size: 2.4em;
+            }
+
+            .hero {
+                height: 300px;
             }
 
             .games-grid {
@@ -181,117 +244,126 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
+    <div class="hero">
+        <div class="hero-inner">
             <h1>🎮 Chata Games</h1>
-            <p class="subtitle">A Collection of Interactive Games</p>
-            <p class="description">Explore our collection of games built by the Chata Games organization. Each game is a fun and engaging experience.</p>
-        </header>
+            <p class="subtitle">Sbírka interaktivních her</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <p class="description">Prozkoumejte naši sbírku her od organizace Chata Games. Každá hra je zábavný a poutavý zážitek.</p>
 
         <div class="stats">
             <div class="stat-item">
                 <h3>6</h3>
-                <p>Games</p>
+                <p>her</p>
             </div>
             <div class="stat-item">
                 <h3>∞</h3>
-                <p>Fun</p>
+                <p>zábavy</p>
             </div>
             <div class="stat-item">
                 <h3>🌟</h3>
-                <p>Quality</p>
+                <p>kvalita</p>
             </div>
         </div>
 
         <div class="games-grid">
-            <!-- Trolluv Sklep -->
-            <a href="trolluv-sklep/" class="game-card">
-                <div class="game-header">
-                    <h2>🛍️ Trolluv Sklep</h2>
+            <!-- Trollův sklep -->
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/trolluv-sklep.webp" alt="Trollův sklep – ilustrace">
+                    <h2>🏰 Trollův sklep</h2>
                 </div>
                 <div class="game-content">
-                    <p>A shopping adventure game with a troll theme. Buy, sell, and manage your magical shop!</p>
+                    <p>Hororová únikovka ve sklepě pod zříceninou hradu. Slepý troll nevidí — ale slyší všechno. Vyřešte goblinovu šifru, vykraďte pokladnici a potichu utečte!</p>
                     <div class="game-links">
-                        <a href="trolluv-sklep/" class="btn btn-primary">Play Game</a>
+                        <a href="trolluv-sklep/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/trolluv-sklep" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
 
-            <!-- Unikovka -->
-            <a href="unikovka/" class="game-card">
-                <div class="game-header">
-                    <h2>🦄 Unikovka</h2>
+            <!-- Únikovka -->
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/unikovka.webp" alt="Únikovka – ilustrace">
+                    <h2>🌙 Únikovka</h2>
                 </div>
                 <div class="game-content">
-                    <p>Meet Unikovka, a unique adventure game featuring magical creatures and mystical challenges.</p>
+                    <p>Je půlnoc a zapomněli jste nakoupit! Proplížte se z chaty, dojeďte do Rožnova, nakupte ve dvě ráno a vraťte se do postele před budíkem. Nikdo se nesmí probudit!</p>
                     <div class="game-links">
-                        <a href="unikovka/" class="btn btn-primary">Play Game</a>
+                        <a href="unikovka/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/unikovka" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
 
             <!-- Dali Game -->
-            <a href="daligame/" class="game-card">
-                <div class="game-header">
-                    <h2>🎨 Dali Game</h2>
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/daligame.webp" alt="Dali Game – ilustrace">
+                    <h2>⚽ Dali Game</h2>
                 </div>
                 <div class="game-content">
-                    <p>An artistic puzzle game inspired by surrealism. Solve mind-bending visual challenges!</p>
+                    <p>Camino a la Gloria — arkádový fotbal na mistrovství světa 2026. Hrajte za Lamine Yamala, probojujte se vyřazovacím pavoukem a zvedněte trofej!</p>
                     <div class="game-links">
-                        <a href="daligame/" class="btn btn-primary">Play Game</a>
+                        <a href="daligame/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/daligame" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
 
             <!-- Forest Rescue -->
-            <a href="forest-rescue/" class="game-card">
-                <div class="game-header">
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/forest-rescue.webp" alt="Forest Rescue – ilustrace">
                     <h2>🌲 Forest Rescue</h2>
                 </div>
                 <div class="game-content">
-                    <p>Help rescue animals in the enchanted forest. Navigate through nature and save the day!</p>
+                    <p>Zachraňte kouzelnou džungli! Sázejte magické stromy a zastavte dřevorubce a buldozery dřív, než se dostanou k srdci pralesa. Přežijte všech 8 vln!</p>
                     <div class="game-links">
-                        <a href="forest-rescue/" class="btn btn-primary">Play Game</a>
+                        <a href="forest-rescue/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/forest-rescue" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
 
             <!-- Grunts Way Home -->
-            <a href="grunts-way-home/" class="game-card">
-                <div class="game-header">
-                    <h2>👹 Grunts Way Home</h2>
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/grunts-way-home.webp" alt="Grunts Way Home – ilustrace">
+                    <h2>🦴 Grunts Way Home</h2>
                 </div>
                 <div class="game-content">
-                    <p>Follow Grunts on an epic journey home through obstacles, puzzles, and adventures.</p>
+                    <p>Pomozte ztracenému pravěkému muži najít cestu domů kouzelnou džunglí. Háček? Nemluvíte stejným jazykem — jeho řeč musíte teprve rozluštit.</p>
                     <div class="game-links">
-                        <a href="grunts-way-home/" class="btn btn-primary">Play Game</a>
+                        <a href="grunts-way-home/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/grunts-way-home" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
 
-            <!-- Tvojekariera -->
-            <a href="tvojekariera/" class="game-card">
-                <div class="game-header">
-                    <h2>💼 Tvojekariera</h2>
+            <!-- Tvoje kariéra -->
+            <div class="game-card">
+                <div class="game-art">
+                    <img src="assets/tvojekariera.webp" alt="Tvoje kariéra – ilustrace">
+                    <h2>🏆 Tvoje kariéra</h2>
                 </div>
                 <div class="game-content">
-                    <p>Build your career path in this strategy game. Make choices, climb the ladder, and achieve success!</p>
+                    <p>Fotbalová kariérní hra: začněte jako neznámý šestnáctiletý kluk a vybudujte si cestu na vrchol — liga, poháry, reprezentace i Zlatý míč.</p>
                     <div class="game-links">
-                        <a href="tvojekariera/" class="btn btn-primary">Play Game</a>
+                        <a href="tvojekariera/" class="btn btn-primary">Hrát hru</a>
                         <a href="https://github.com/chata-games/tvojekariera" class="btn btn-secondary" target="_blank">GitHub</a>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <footer>
-            <p>&copy; 2026 Chata Games Organization. All games are open source and available on GitHub.</p>
-            <p style="margin-top: 10px; font-size: 0.85em;">Master repository: <a href="https://github.com/chata-games/chata-games" style="color: white; text-decoration: underline;">github.com/chata-games/chata-games</a></p>
+            <p>&copy; 2026 Chata Games. Všechny hry jsou open source a dostupné na GitHubu.</p>
+            <p style="margin-top: 10px; font-size: 0.85em;">Hlavní repozitář: <a href="https://github.com/chata-games/chata-games">github.com/chata-games/chata-games</a></p>
         </footer>
     </div>
 </body>
