@@ -1,0 +1,18 @@
+[submodule "trolluv-sklep"]
+	path = trolluv-sklep
+	url = https://github.com/chata-games/trolluv-sklep.git
+[submodule "unikovka"]
+	path = unikovka
+	url = https://github.com/chata-games/unikovka.git
+[submodule "daligame"]
+	path = daligame
+	url = https://github.com/chata-games/daligame.git
+[submodule "forest-rescue"]
+	path = forest-rescue
+	url = https://github.com/chata-games/forest-rescue.git
+[submodule "grunts-way-home"]
+	path = grunts-way-home
+	url = https://github.com/chata-games/grunts-way-home.git
+[submodule "tvojekariera"]
+	path = tvojekariera
+	url = https://github.com/chata-games/tvojekariera.git
