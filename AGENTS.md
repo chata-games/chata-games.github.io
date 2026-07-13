@@ -15,3 +15,5 @@ Five canonical triage roles map to GitHub labels. See `docs/agents/triage-labels
 ### Domain docs
 
 Multi-context layout with root `CONTEXT-MAP.md` pointing to per-game CONTEXT.md files. See `docs/agents/domain.md`.
+
+@RTK.md
