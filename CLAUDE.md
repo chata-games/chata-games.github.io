@@ -16,6 +16,16 @@ Five canonical triage roles map to GitHub labels. See `docs/agents/triage-labels
 
 Multi-context layout with root `CONTEXT-MAP.md` pointing to per-game CONTEXT.md files. See `docs/agents/domain.md`.
 
+## Rules of engagement
+
+Canonical doc: `docs/agents/rules-of-engagement.md`. Applies to Claude Code, Codex, and Cursor.
+
+**Default delivery:** when a task changes files and the user has not opted out, commit and push to `main`. Work on `main` in the primary checkout unless the user asks for a separate branch or worktree.
+
+**Assets:** generate visual assets with Codex image gen (`~/.claude/skills/codex-imagegen/imagegen.sh`), not raw API stubs or placeholder art.
+
+**Submodules:** push the linked repo's `main` first, then commit and push the updated pointer here.
+
 <!-- rtk-instructions v2 -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
 

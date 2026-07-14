@@ -2,6 +2,8 @@
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
+Agent-wide delivery and working rules: `docs/agents/rules-of-engagement.md`.
+
 ## Before exploring, read these
 
 - **`CONTEXT-MAP.md`** at the repo root — it points to one `CONTEXT.md` per game context.
