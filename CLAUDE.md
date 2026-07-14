@@ -22,7 +22,9 @@ Canonical doc: `docs/agents/rules-of-engagement.md`. Applies to Claude Code, Cod
 
 **Default delivery:** when a task changes files and the user has not opted out, commit and push to `main`. Work on `main` in the primary checkout unless the user asks for a separate branch or worktree.
 
-**Assets:** generate visual assets with Codex image gen (`~/.claude/skills/codex-imagegen/imagegen.sh`), not raw API stubs or placeholder art.
+**Assets:** use the built-in imagegen tool when available; otherwise Codex image gen (`~/.claude/skills/codex-imagegen/imagegen.sh`). No API stubs or placeholder art.
+
+**GitHub Pages:** every repo is hosted on Pages — follow `docs/agents/github-pages.md`. Implement missing paths, deploy workflow, or README as part of the task.
 
 **Submodules:** push the linked repo's `main` first, then commit and push the updated pointer here.
 

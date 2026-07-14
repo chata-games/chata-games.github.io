@@ -1,0 +1,28 @@
+---
+description: Default delivery, assets, and working rules for all agents
+alwaysApply: true
+---
+
+# Rules of Engagement
+
+Follow `docs/agents/rules-of-engagement.md` in full. Summary:
+
+## Finish the task
+
+When work changes files and the user has **not** opted out: commit, then push to `main`.
+
+## Branches and worktrees
+
+Work on `main` in the primary checkout unless the user asks for a separate branch or worktree.
+
+## Asset generation
+
+Use the built-in imagegen tool when available. Otherwise fall back to Codex image gen (`~/.claude/skills/codex-imagegen/imagegen.sh`). No API stubs or placeholder art.
+
+## GitHub Pages
+
+Every repo is hosted on GitHub Pages. Follow `docs/agents/github-pages.md`. Fix missing paths, deploy workflow, or README as part of the task.
+
+## How to work
+
+Minimize scope. Follow invoked skills. Prefix shell commands with `rtk`. Use domain docs from `CONTEXT-MAP.md`.

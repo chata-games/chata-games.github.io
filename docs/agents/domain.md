@@ -4,6 +4,8 @@ How the engineering skills should consume this repo's domain documentation when 
 
 Agent-wide delivery and working rules: `docs/agents/rules-of-engagement.md`.
 
+GitHub Pages hosting conventions: `docs/agents/github-pages.md`.
+
 ## Before exploring, read these
 
 - **`CONTEXT-MAP.md`** at the repo root — it points to one `CONTEXT.md` per game context.

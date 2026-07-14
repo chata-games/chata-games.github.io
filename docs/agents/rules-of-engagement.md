@@ -26,10 +26,16 @@ When a linked repository changes: push its `main` first, then commit and push th
 
 When creating or editing visual assets (sprites, icons, illustrations, textures, UI art):
 
-- Use **Codex image gen**: `~/.claude/skills/codex-imagegen/imagegen.sh <output.png> "<prompt>" [reference ...]`
-- Read `~/.claude/skills/codex-imagegen/SKILL.md` for the full workflow.
-- Do **not** use Cursor image gen, raw DALL·E/API calls, or placeholder stubs unless the user names a different tool.
-- Write outputs into the project's asset paths; follow that game's existing prompt and post-process conventions.
+1. Use the agent's **built-in imagegen tool** when available.
+2. If no built-in tool exists, use **Codex image gen**: `~/.claude/skills/codex-imagegen/imagegen.sh <output.png> "<prompt>" [reference ...]` — see `~/.claude/skills/codex-imagegen/SKILL.md`.
+3. Do **not** use raw DALL·E/API calls or placeholder stubs unless the user names a different tool.
+4. Write outputs into the project's asset paths; follow that game's existing prompt and post-process conventions.
+
+## GitHub Pages
+
+Every repo in this org is hosted on GitHub Pages. Follow `docs/agents/github-pages.md`.
+
+When working in a repo, verify Pages readiness (relative paths, deploy workflow, README). **Implement anything missing** as part of the task — do not leave deployment broken or undocumented.
 
 ## How to work
 
