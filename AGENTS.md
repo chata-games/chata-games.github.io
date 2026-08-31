@@ -6,7 +6,7 @@ This file documents how agents should interact with this repository.
 
 ### Issue tracker
 
-Issues live in GitHub. See `docs/agents/issue-tracker.md`.
+Issues live in Rohrpost, the git-native tracker in `.rohrpost/` (use the `rp` CLI). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

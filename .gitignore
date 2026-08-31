@@ -26,3 +26,4 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+.rohrpost/tickets.jsonl
