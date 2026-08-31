@@ -14,6 +14,9 @@ this one walks EVERY level listed in forest-rescue/levels/campaign.json:
                  battle is an alive engine, a frozen HUD is not)
               -> zero watched failure events (uncaught exceptions, failed
                  network loads, console errors) and zero 4xx/5xx assets
+              -> RP-vebqyv fit at the pinned 940x850 window: no page overflow,
+                 every toolbar card fully on-screen (reachable), canvas and
+                 canvasWrap inside the viewport
 
 Rules (inherited from the pages smoke):
   1. Sense, act, sense again — DOM state is read back and asserted; return
@@ -110,6 +113,11 @@ class Runner:
         self.ca("Page.navigate", json.dumps({"url": url}))
         self.wait_event("Page.loadEventFired", timeout)
 
+    def pin_viewport(self):
+        """Pin the window to 940x850 (the RP-vebqyv regression size, where 8
+        toolbar cards at the old min-width forced a 2296px page overflow)."""
+        self.ca("Emulation.setDeviceMetricsOverride", json.dumps({"width": 940, "height": 850, "deviceScaleFactor": 1, "mobile": False}))
+
     def screenshot(self, tag):
         try:
             out = self.ca("Page.captureScreenshot", json.dumps({"format": "png"}))
@@ -182,6 +190,32 @@ class Runner:
     def text_of(self, selector):
         return f'document.querySelector("{selector}").textContent'
 
+    def assert_fit(self, level_id):
+        """RP-vebqyv: layout fits the pinned viewport on this level — no page
+        overflow (the old 8x280px card bar forced 2296px), every toolbar card
+        fully on-screen and tappable, canvas and wrap inside the window."""
+        fit = self.evaluate(
+            "(()=>{const iw=window.innerWidth,ih=window.innerHeight;"
+            "const sw=document.documentElement.scrollWidth;"
+            "const btns=[...document.querySelectorAll('.tool-button')].map((b)=>{const r=b.getBoundingClientRect();"
+            "return {text:b.textContent.slice(0,24),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
+            "const c=document.getElementById('gameCanvas').getBoundingClientRect();"
+            "const w=document.getElementById('canvasWrap').getBoundingClientRect();"
+            "return {iw,ih,sw,cards:btns,canvas:{l:c.left,t:c.top,r:c.right,b:c.bottom},wrap:{l:w.left,t:w.top,r:w.right,b:w.bottom}};})()"
+        )
+        if not isinstance(fit, dict):
+            raise Fail(f"fit probe on {level_id} returned {fit!r}")
+        if fit["sw"] > fit["iw"] + 1:
+            raise Fail(f"page overflows viewport on {level_id}: scrollWidth {fit['sw']} > innerWidth {fit['iw']}")
+        off = [b["text"] for b in fit["cards"]
+               if b["l"] < -1 or b["t"] < -1 or b["r"] > fit["iw"] + 1 or b["b"] > fit["ih"] + 1]
+        if off:
+            raise Fail(f"cards unreachable on {level_id} at {fit['iw']}x{fit['ih']}: {off}")
+        for name, box in (("#gameCanvas", fit["canvas"]), ("#canvasWrap", fit["wrap"])):
+            if box["l"] < -1 or box["t"] < -1 or box["r"] > fit["iw"] + 1 or box["b"] > fit["ih"] + 1:
+                raise Fail(f"{name} exceeds viewport on {level_id} at {fit['iw']}x{fit['ih']}: {box}")
+        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable, canvas+wrap inside viewport")
+
     # ---- per-level flow --------------------------------------------------------
 
     def play_level(self, index, level):
@@ -221,6 +255,7 @@ class Runner:
         bad = self.bad_resources()
         if bad:
             raise Fail(f"4xx/5xx subresources on {level_id} (Pages subpath bug?): {bad}")
+        self.assert_fit(level_id)
         self.check_events()
         print(f"  ok: title {name!r}, engine alive (wave {hud['wave']!r}, end overlay visible: {hud['endVisible']}, title: {hud['end']!r}), no failures")
 
@@ -242,6 +277,7 @@ class Runner:
                 stdout=self.evfile,
                 stderr=subprocess.DEVNULL,
             )
+            self.pin_viewport()  # pin before any navigation so every level runs at 940x850
             for i, level in enumerate(LEVELS):
                 self.play_level(i, level)
             self.screenshot("final")

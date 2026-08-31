@@ -5,7 +5,10 @@ Drives a headless Chrome (via the chrome-agent CLI / CDP) against
 https://chata-games.github.io/forest-rescue/ and verifies the deployed game
 actually works: clean load (no exceptions, no failed network loads, no 4xx
 assets), campaign-map entry, planting a defender on a fairy ring, and a full
-battle resolution on the deterministic hand-test level.
+battle resolution on the deterministic hand-test level, plus the RP-vebqyv
+fit guarantees at a pinned 940x850 window: no page overflow, every toolbar
+card reachable, canvas/canvasWrap inside the viewport, pause and mute
+reachable, and the canvas refitting after Replay.
 
 Rules the script follows:
   1. Sense, act, sense again — after every action the state it should have
@@ -188,6 +191,12 @@ class Runner:
     def text_of(self, selector):
         return f'document.querySelector("{selector}").textContent'
 
+    def pin_viewport(self):
+        """Pin the window to 940x850 (the RP-vebqyv regression size, where 8
+        toolbar cards at the old min-width forced a 2296px page overflow).
+        deviceScaleFactor 1 keeps the dpr==1 guard in canvas_click_point true."""
+        self.ca("Emulation.setDeviceMetricsOverride", json.dumps({"width": 940, "height": 850, "deviceScaleFactor": 1, "mobile": False}))
+
     def canvas_click_point(self, world_x, world_y):
         """Replicate the game's viewTransform() (src/heartwood-game.js) for a
         trusted click at a world coordinate. Guarded on dpr==1 (headless)."""
@@ -288,6 +297,56 @@ class Runner:
         self.screenshot("final-outcome")
         print(f"  ok: battle resolved -> {outcome!r} ({msg}); overlay visible: {hud['endVisible']}; replay visible: {replay_visible}")
 
+    # ---- fit guarantees (RP-vebqyv) ----------------------------------------
+
+    def assert_fit(self, what):
+        """Layout fits the pinned viewport: no page overflow, every toolbar
+        card fully on-screen (reachable), canvas and wrap inside the window."""
+        fit = self.evaluate(
+            "(()=>{const iw=window.innerWidth,ih=window.innerHeight;"
+            "const sw=document.documentElement.scrollWidth;"
+            "const btns=[...document.querySelectorAll('.tool-button')].map((b)=>{const r=b.getBoundingClientRect();"
+            "return {text:b.textContent.slice(0,24),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
+            "const c=document.getElementById('gameCanvas').getBoundingClientRect();"
+            "const w=document.getElementById('canvasWrap').getBoundingClientRect();"
+            "return {iw,ih,sw,cards:btns,canvas:{l:c.left,t:c.top,r:c.right,b:c.bottom},wrap:{l:w.left,t:w.top,r:w.right,b:w.bottom}};})()"
+        )
+        if not isinstance(fit, dict):
+            raise Fail(f"{what}: fit probe returned {fit!r}")
+        if fit["sw"] > fit["iw"] + 1:
+            raise Fail(f"{what}: page overflows viewport: scrollWidth {fit['sw']} > innerWidth {fit['iw']}")
+        off = [b["text"] for b in fit["cards"]
+               if b["l"] < -1 or b["t"] < -1 or b["r"] > fit["iw"] + 1 or b["b"] > fit["ih"] + 1]
+        if off:
+            raise Fail(f"{what}: cards unreachable at {fit['iw']}x{fit['ih']}: {off}")
+        for name, box in (("#gameCanvas", fit["canvas"]), ("#canvasWrap", fit["wrap"])):
+            if box["l"] < -1 or box["t"] < -1 or box["r"] > fit["iw"] + 1 or box["b"] > fit["ih"] + 1:
+                raise Fail(f"{what}: {name} exceeds viewport at {fit['iw']}x{fit['ih']}: {box}")
+        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable, canvas+wrap inside viewport ({what})")
+
+    def flow5_fit_and_controls(self):
+        self.step = "flow5: fit at 940x850, Replay refits canvas, pause/mute reachable"
+        print("[5] fit checks (RP-vebqyv): no overflow, cards reachable, Replay refit, pause/mute")
+        self.assert_fit("before Replay")
+        # Replay used to snap the canvas from ~924px to the page's overflowing
+        # 2296px layout width (the card bar's old min-content width), pushing
+        # spawn-side rings, pause and mute off-screen.
+        self.js_click("#replayButton")
+        self.poll(self.visible("#endOverlay"), lambda v: v is False, "#endOverlay hidden after Replay")
+        self.poll(self.visible("#gameScreen"), lambda v: v is True, "#gameScreen visible after Replay")
+        self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit(), "live mana value after Replay", timeout=10)
+        self.assert_fit("after Replay")
+        self.screenshot("after-replay")
+        self.js_click("#pauseButton")
+        self.poll(self.visible("#pauseOverlay"), lambda v: v is True, "#pauseOverlay visible after pause click")
+        self.js_click("#resumeButton")
+        self.poll(self.visible("#pauseOverlay"), lambda v: v is False, "#pauseOverlay hidden after resume click")
+        self.js_click("#muteButton")
+        self.poll(self.text_of("#muteButton"), lambda v: v == "\U0001F507", "mute button toggles to \U0001F507")
+        self.js_click("#muteButton")
+        self.poll(self.text_of("#muteButton"), lambda v: v == "\U0001F50A", "mute button toggles back to \U0001F50A")
+        print("  ok: pause and mute reachable and functional")
+
     # ---- lifecycle ---------------------------------------------------------
 
     def run(self):
@@ -306,6 +365,7 @@ class Runner:
                 stdout=self.evfile,
                 stderr=subprocess.DEVNULL,
             )
+            self.pin_viewport()  # pin before any navigation so every flow runs at 940x850
             self.flow1_load()
             self.check_events()
             self.flow2_campaign_entry()
@@ -313,6 +373,8 @@ class Runner:
             self.flow3_plant_defender()
             self.check_events()
             self.flow4_battle_resolves()
+            self.check_events()
+            self.flow5_fit_and_controls()
             self.check_events()
             print("\nPASS: Forest Rescue on GitHub Pages is working end to end.")
         except Fail as e:
