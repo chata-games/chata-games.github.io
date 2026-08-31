@@ -109,6 +109,21 @@ class Runner:
             raise Fail(f"timed out waiting for {method} within {timeout}s")
         return json.loads(r.stdout)
 
+    def js_click(self, selector):
+        """Locate via DOM, act via trusted input events (press + release)."""
+        pos = self.evaluate(
+            f'(()=>{{const el=document.querySelector("{selector}");'
+            "if(!el) return null; const r=el.getBoundingClientRect();"
+            "return {x:Math.round(r.x+r.width/2), y:Math.round(r.y+r.height/2)};})()"
+        )
+        if not pos:
+            raise Fail(f"js_click: {selector} not found")
+        self.click(pos["x"], pos["y"])
+
+    def click(self, x, y):
+        for mtype in ("mousePressed", "mouseReleased"):
+            self.ca("Input.dispatchMouseEvent", json.dumps({"type": mtype, "x": x, "y": y, "button": "left", "clickCount": 1}))
+
     def navigate(self, url, timeout=40):
         self.ca("Page.navigate", json.dumps({"url": url}))
         self.wait_event("Page.loadEventFired", timeout)
@@ -187,6 +202,24 @@ class Runner:
     def visible(self, selector):
         return f'!document.querySelector("{selector}").classList.contains("hidden")'
 
+    def holds(self, expression, predicate, what, seconds=3):
+        """Observation window (RP-48sjgh): the predicate must hold on EVERY
+        read for `seconds` seconds. This is an assertion, not a wait — any
+        violating read fails immediately."""
+        last = None
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            last = self.evaluate(expression)
+            if not predicate(last):
+                raise Fail(f"{what}: state changed during hold window; observed {last!r}")
+            time.sleep(0.5)
+        return last
+
+    def gate_state(self):
+        """RP-48sjgh wave gate probe: HUD wave text + Start-Wave visibility."""
+        return ('(()=>({wave:document.querySelector("#waveText").textContent,'
+                'startVisible:!document.querySelector("#startWaveButton").classList.contains("hidden")}))()')
+
     def text_of(self, selector):
         return f'document.querySelector("{selector}").textContent'
 
@@ -238,6 +271,13 @@ class Runner:
         observed = self.evaluate(self.text_of("#waveText"))
         if observed != first_wave:
             print(f"  note: waveText already past wave 1 at first read: {observed!r}")
+        # RP-48sjgh: wave 1 must hold behind a visible Start-Wave button until
+        # it is pressed — no auto-advancing waves on level entry.
+        gate = self.gate_state()
+        self.holds(gate, lambda v: isinstance(v, dict) and v.get("wave") == first_wave and v.get("startVisible") is True,
+                   f"wave 1 held behind visible Start-Wave button ({first_wave})", seconds=3)
+        self.js_click("#startWaveButton")
+        self.poll(gate, lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after press")
         hud = self.poll(
             '(()=>({wave:document.querySelector("#waveText").textContent,'
             'endVisible:!document.querySelector("#endOverlay").classList.contains("hidden"),'

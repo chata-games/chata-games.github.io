@@ -33,6 +33,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WAITER = os.path.join(HERE, "cdp-wait.py")
@@ -185,6 +186,24 @@ class Runner:
             time.sleep(0.5)
         raise Fail(f"timed out after {timeout}s waiting for {what}; last observed {last!r}")
 
+    def holds(self, expression, predicate, what, seconds=4):
+        """Observation window: the predicate must hold on EVERY read for
+        `seconds` seconds. This is an assertion, not a wait — any violating
+        read fails immediately (no fixed sleeps; the window is the test)."""
+        last = None
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            last = self.evaluate(expression)
+            if not predicate(last):
+                raise Fail(f"{what}: state changed during hold window; observed {last!r}")
+            time.sleep(0.5)
+        return last
+
+    def gate_state(self):
+        """RP-48sjgh wave gate probe: HUD wave text + Start-Wave visibility."""
+        return ('(()=>({wave:document.querySelector("#waveText").textContent,'
+                'startVisible:!document.querySelector("#startWaveButton").classList.contains("hidden")}))()')
+
     def visible(self, selector):
         return f'!document.querySelector("{selector}").classList.contains("hidden")'
 
@@ -240,10 +259,18 @@ class Runner:
         self.expect_eq(self.evaluate(self.text_of("#levelTitle")), LEVEL1_NAME, "level title")  # set synchronously by campaign.js
         # The pre-fix failure mode was a frozen HUD (placeholders forever). The
         # engine regenerates mana from the start, so assert liveness — the HUD
-        # shows live integers and the wave counter advances — not exact values.
+        # shows live integers — not exact values.
         self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit(), "live mana value", timeout=10)
+        # RP-48sjgh: wave 1 is gated behind the Start-Wave button. While gated
+        # the wave counter must HOLD at Wave 1 / 8 (unlimited prep, no auto-
+        # advancing waves), and only the button press may start the wave.
+        gate = self.gate_state()
+        self.holds(gate, lambda v: isinstance(v, dict) and v.get("wave") == "Wave 1 / 8" and v.get("startVisible") is True,
+                   "wave 1 held behind visible Start-Wave button", seconds=4)
+        self.js_click("#startWaveButton")
+        self.poll(gate, lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after press")
         self.poll(self.text_of("#waveText"), lambda v: isinstance(v, str) and v.startswith("Wave ") and v != "Wave 1 / 8", "wave counter advances past Wave 1", timeout=90)
-        print("  ok: engine running, wave counter advanced")
+        print("  ok: gate held wave 1, Start-Wave pressed, wave counter advanced")
         print(f"  ok: entered {LEVEL1_NAME!r}, HUD at mana {START_MANA}, 5 hearts, Wave 1 / 8")
 
     def flow3_plant_defender(self):
@@ -267,6 +294,15 @@ class Runner:
         self.poll(self.visible("#gameScreen"), lambda v: v is True, "#gameScreen visible (level param entry)", timeout=30)
         self.expect_eq(self.evaluate(self.text_of("#levelTitle")), HANDTEST_NAME, "level title")
         self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit(), "live mana value", timeout=10)
+        # RP-48sjgh: a fresh level (?level= entry included) holds wave 1 behind
+        # the Start-Wave button — assert the hold, then press before planting
+        # (the centered overlay button would swallow canvas clicks near the
+        # screen center, so the press must precede ring clicks).
+        gate = self.gate_state()
+        self.holds(gate, lambda v: isinstance(v, dict) and v.get("wave") == "Wave 1 / 3" and v.get("startVisible") is True,
+                   "wave 1 held behind Start-Wave on ?level= entry", seconds=3)
+        self.js_click("#startWaveButton")
+        self.poll(gate, lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after press")
         mana_before = int(self.evaluate(self.text_of("#manaText")))
         for i, (wx, wy) in enumerate(HANDTEST_RINGS):
             point = self.canvas_click_point(wx, wy)
@@ -335,6 +371,13 @@ class Runner:
         self.poll(self.visible("#endOverlay"), lambda v: v is False, "#endOverlay hidden after Replay")
         self.poll(self.visible("#gameScreen"), lambda v: v is True, "#gameScreen visible after Replay")
         self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit(), "live mana value after Replay", timeout=10)
+        # RP-48sjgh: Replay re-arms the gate — wave 1 (of the 3-wave hand-test
+        # level) must hold behind a visible Start-Wave button until pressed.
+        gate = self.gate_state()
+        self.holds(gate, lambda v: isinstance(v, dict) and v.get("wave") == "Wave 1 / 3" and v.get("startVisible") is True,
+                   "wave 1 held behind Start-Wave after Replay", seconds=3)
+        self.js_click("#startWaveButton")
+        self.poll(gate, lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after post-Replay press")
         self.assert_fit("after Replay")
         self.screenshot("after-replay")
         self.js_click("#pauseButton")
