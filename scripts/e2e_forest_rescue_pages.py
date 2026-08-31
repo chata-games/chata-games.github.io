@@ -270,15 +270,23 @@ class Runner:
         if mana_after >= mana_before:
             raise Fail(f"planting did not spend mana: before {mana_before}, after {mana_after}")
         print(f"  ok: defenders planted (mana {mana_before} -> {mana_after})")
-        outcome = self.poll(
-            self.text_of("#endTitle"),
-            lambda v: v in ("Victory", "Game Over"),
-            "endOverlay title (Victory or Game Over)",
+        # The hidden overlay ships static "Game Over" text in index.html, so
+        # title text alone is NOT a resolution signal — the #endOverlay element
+        # must have lost its "hidden" class too. #replayButton never carries a
+        # hidden class of its own (hiding is via the #endOverlay ancestor), so
+        # replay visibility is derived from the overlay's visibility.
+        hud = self.poll(
+            '(()=>({endVisible:!document.querySelector("#endOverlay").classList.contains("hidden"),'
+            'end:document.querySelector("#endTitle").textContent}))()',
+            lambda v: isinstance(v, dict) and v.get("endVisible") is True and v.get("end") in ("Victory", "Game Over"),
+            "#endOverlay visible with title (Victory or Game Over)",
             timeout=240,
         )
+        outcome = hud["end"]
+        replay_visible = self.evaluate(self.visible("#endOverlay"))
         msg = self.evaluate(self.text_of("#endMessage"))
         self.screenshot("final-outcome")
-        print(f"  ok: battle resolved -> {outcome!r} ({msg}); replay visible:", self.evaluate(self.visible("#replayButton")))
+        print(f"  ok: battle resolved -> {outcome!r} ({msg}); overlay visible: {hud['endVisible']}; replay visible: {replay_visible}")
 
     # ---- lifecycle ---------------------------------------------------------
 
