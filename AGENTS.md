@@ -28,4 +28,18 @@ Canonical doc: `docs/agents/rules-of-engagement.md`. Applies to Claude Code, Cod
 
 **Submodules:** push the linked repo's `main` first, then commit and push the updated pointer here.
 
+## Subagent workflows
+
+When authoring `workflow` scripts (ticket loops, implementation trains):
+
+- Every subagent prompt that may launch a browser must end with "stop any
+  chrome-agent instance you launched (`chrome-agent stop <instance>`) before
+  returning" — subagents otherwise leak instances the orchestrator must clean up.
+- If implementer prompts say "create NO tickets" (right, for scope), the verify
+  prompt must reconcile follow-ups: scan closed tickets' comments for flagged
+  follow-up work and confirm each has an actually-filed ticket. Findings
+  recorded only in a close comment die there.
+- Orchestrator end-of-run check: `chrome-agent status` empty, both repos' `git
+  status` clean, `rp list --status open` matches expectations.
+
 @RTK.md
