@@ -61,7 +61,7 @@ def load_levels():
             compiled = json.load(f)
         if compiled["id"] != level_id:
             raise SystemExit(f"campaign/compiled mismatch: {level_id} vs {compiled['id']}")
-        levels.append({"id": level_id, "name": compiled["name"], "waves": len(compiled["waves"])})
+        levels.append({"id": level_id, "name": compiled["name"], "waves": len(compiled["waves"]), "maxHearts": compiled["maxHearts"]})
     return levels
 
 
@@ -296,12 +296,36 @@ class Runner:
         )
         if hud.get("endVisible") and hud.get("wave") == first_wave:
             print(f"  note: battle resolved during wave 1 (idle run, no defenders): {hud['end']!r} — engine alive")
+        if hud.get("endVisible"):
+            self.assert_end_summary(level_id, hud)
         bad = self.bad_resources()
         if bad:
             raise Fail(f"4xx/5xx subresources on {level_id} (Pages subpath bug?): {bad}")
         self.assert_fit(level_id)
         self.check_events()
         print(f"  ok: title {name!r}, engine alive (wave {hud['wave']!r}, end overlay visible: {hud['endVisible']}, title: {hud['end']!r}), no failures")
+
+    def assert_end_summary(self, level_id, hud):
+        """RP-nqfepx: a resolved battle's modal carries the read-only recap —
+        wave reached (matches the frozen HUD wave), enemies leaked within the
+        level's max hearts, mana banked — on either outcome."""
+        summary = self.evaluate(
+            '(()=>({visible:!document.querySelector("#endSummary").classList.contains("hidden"),'
+            'wave:document.querySelector("#endWaveText").textContent,'
+            'leaks:document.querySelector("#endLeaksText").textContent,'
+            'mana:document.querySelector("#endManaText").textContent}))()'
+        )
+        max_hearts = next(l["maxHearts"] for l in LEVELS if l["id"] == level_id)
+        if not (
+            isinstance(summary, dict)
+            and summary.get("visible") is True
+            and summary.get("wave") == hud["wave"].split()[1]
+            and str(summary.get("leaks", "")).isdigit()
+            and 0 <= int(summary["leaks"]) <= max_hearts
+            and str(summary.get("mana", "")).isdigit()
+        ):
+            raise Fail(f"RP-nqfepx: end summary wrong on {level_id}: {summary!r} (hud wave {hud['wave']!r})")
+        print(f"  ok: end summary (RP-nqfepx) on {level_id}: wave {summary['wave']} reached, {summary['leaks']} enemies leaked, {summary['mana']} mana banked")
 
     # ---- lifecycle -------------------------------------------------------------
 

@@ -56,6 +56,7 @@ LEVEL1_RING = (1269, 367)  # ring-7, a fairy ring in world coordinates
 HANDTEST_ID = "00-hand-test-s-curve"
 HANDTEST_NAME = "Hand Test S-Curve"
 HANDTEST_RINGS = [(831, 503), (1025, 211), (1304, 332)]  # three fairy rings
+HANDTEST_MAX_HEARTS = 5  # levels/compiled/00-hand-test-s-curve.json
 TREE_COST = 50  # Magic Tree mana cost
 START_MANA = 150
 START_HEARTS = "\u2665" * 5
@@ -454,8 +455,33 @@ class Runner:
         outcome = hud["end"]
         replay_visible = self.evaluate(self.visible("#endOverlay"))
         msg = self.evaluate(self.text_of("#endMessage"))
+        self.assert_end_summary(outcome)
         self.screenshot("final-outcome")
         print(f"  ok: battle resolved -> {outcome!r} ({msg}); overlay visible: {hud['endVisible']}; replay visible: {replay_visible}; kill bounty float seen: {kill_float}")
+
+    def assert_end_summary(self, outcome):
+        """RP-nqfepx: the end modal ships a read-only recap — wave reached,
+        enemies leaked (hearts lost), mana banked — visible on BOTH outcomes.
+        The HUD freezes at the end of the finish frame (update() early-returns
+        once resolved), so the wave must match the HUD exactly; banked mana may
+        trail the HUD only by kill bounties (+8 each) that landed in the same
+        frame as the fatal leak, after finish() captured its number."""
+        summary = self.evaluate(
+            '(()=>({visible:!document.querySelector("#endSummary").classList.contains("hidden"),'
+            'wave:document.querySelector("#endWaveText").textContent,'
+            'leaks:document.querySelector("#endLeaksText").textContent,'
+            'mana:document.querySelector("#endManaText").textContent,'
+            'hudWave:document.querySelector("#waveText").textContent,'
+            'hudMana:document.querySelector("#manaText").textContent}))()'
+        )
+        if not isinstance(summary, dict) or not summary.get("visible"):
+            raise Fail(f"RP-nqfepx: end summary not visible on {outcome}: {summary!r}")
+        self.expect_eq(summary["wave"], summary["hudWave"].split()[1], f"summary wave reached ({outcome})")
+        if not (summary["leaks"].isdigit() and 0 <= int(summary["leaks"]) <= HANDTEST_MAX_HEARTS):
+            raise Fail(f"RP-nqfepx: summary enemies leaked out of range on {outcome}: {summary!r}")
+        if not (summary["mana"].isdigit() and 0 <= int(summary["hudMana"]) - int(summary["mana"]) <= 64):
+            raise Fail(f"RP-nqfepx: summary mana banked incoherent with HUD on {outcome}: {summary!r}")
+        print(f"  ok: end summary on {outcome!r} (RP-nqfepx): wave {summary['wave']} reached, {summary['leaks']} enemies leaked, {summary['mana']} mana banked")
 
     # ---- fit guarantees (RP-vebqyv) ----------------------------------------
 
