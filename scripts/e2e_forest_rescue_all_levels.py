@@ -226,12 +226,13 @@ class Runner:
     def assert_fit(self, level_id):
         """RP-vebqyv: layout fits the pinned viewport on this level — no page
         overflow (the old 8x280px card bar forced 2296px), every toolbar card
-        fully on-screen and tappable, canvas and wrap inside the window."""
+        fully on-screen and tappable, canvas and wrap inside the window. Also
+        asserts the RP-pyvp2r role line is present on every card."""
         fit = self.evaluate(
             "(()=>{const iw=window.innerWidth,ih=window.innerHeight;"
             "const sw=document.documentElement.scrollWidth;"
             "const btns=[...document.querySelectorAll('.tool-button')].map((b)=>{const r=b.getBoundingClientRect();"
-            "return {text:b.textContent.slice(0,24),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
+            "return {text:b.textContent.slice(0,24),role:(b.querySelector('.tool-button__role')||{textContent:''}).textContent.trim(),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
             "const c=document.getElementById('gameCanvas').getBoundingClientRect();"
             "const w=document.getElementById('canvasWrap').getBoundingClientRect();"
             "return {iw,ih,sw,cards:btns,canvas:{l:c.left,t:c.top,r:c.right,b:c.bottom},wrap:{l:w.left,t:w.top,r:w.right,b:w.bottom}};})()"
@@ -244,10 +245,13 @@ class Runner:
                if b["l"] < -1 or b["t"] < -1 or b["r"] > fit["iw"] + 1 or b["b"] > fit["ih"] + 1]
         if off:
             raise Fail(f"cards unreachable on {level_id} at {fit['iw']}x{fit['ih']}: {off}")
+        bare = [b["text"] for b in fit["cards"] if not b.get("role")]
+        if bare:
+            raise Fail(f"cards missing a role line (RP-pyvp2r) on {level_id}: {bare}")
         for name, box in (("#gameCanvas", fit["canvas"]), ("#canvasWrap", fit["wrap"])):
             if box["l"] < -1 or box["t"] < -1 or box["r"] > fit["iw"] + 1 or box["b"] > fit["ih"] + 1:
                 raise Fail(f"{name} exceeds viewport on {level_id} at {fit['iw']}x{fit['ih']}: {box}")
-        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable, canvas+wrap inside viewport")
+        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable with role lines, canvas+wrap inside viewport")
 
     # ---- per-level flow --------------------------------------------------------
 

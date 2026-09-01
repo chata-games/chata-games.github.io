@@ -267,11 +267,52 @@ class Runner:
         gate = self.gate_state()
         self.holds(gate, lambda v: isinstance(v, dict) and v.get("wave") == "Wave 1 / 8" and v.get("startVisible") is True,
                    "wave 1 held behind visible Start-Wave button", seconds=4)
+        self.probe_range_ghost()
         self.js_click("#startWaveButton")
         self.poll(gate, lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after press")
         self.poll(self.text_of("#waveText"), lambda v: isinstance(v, str) and v.startswith("Wave ") and v != "Wave 1 / 8", "wave counter advances past Wave 1", timeout=90)
         print("  ok: gate held wave 1, Start-Wave pressed, wave counter advanced")
         print(f"  ok: entered {LEVEL1_NAME!r}, HUD at mana {START_MANA}, 5 hearts, Wave 1 / 8")
+
+    def probe_range_ghost(self):
+        """RP-pyvp2r: hovering a fairy ring with a defender card selected draws
+        a range ghost — a circle of the defender's range snapped to the ring,
+        green when placeable. The ghost stroke is solid #b4ffa0, so the probe
+        samples canvas pixels along the expected circle (sprig-sentinel range
+        160 world units) before and after the hover. The pre-hover baseline
+        also self-controls against bright lookalike pixels."""
+        point = self.canvas_click_point(*LEVEL1_RING)
+        if "err" in point:
+            raise Fail(f"cannot hover ring: {point['err']}")
+        probe = (
+            "(()=>{if(window.devicePixelRatio!==1)return{err:'dpr='+window.devicePixelRatio};"
+            "const cv=document.getElementById('gameCanvas');const c2=cv.getContext('2d');"
+            "const wrap=document.getElementById('canvasWrap').getBoundingClientRect();"
+            "const w=Math.max(320,Math.floor(wrap.width)),h=Math.max(220,Math.floor(wrap.height));"
+            f"const s=Math.min(w/{WORLD_W},h/{WORLD_H});"
+            f"const ox=(w-{WORLD_W}*s)/2,oy=(h-{WORLD_H}*s)/2;"
+            f"const cx=ox+{LEVEL1_RING[0]}*s,cy=oy+{LEVEL1_RING[1]}*s,R=160*s;"
+            "const bx=Math.max(0,Math.floor(cx-R-4)),by=Math.max(0,Math.floor(cy-R-4));"
+            "const bw=Math.min(cv.width-bx,Math.ceil(2*R)+9),bh=Math.min(cv.height-by,Math.ceil(2*R)+9);"
+            "if(bw<2||bh<2)return{err:'probe box '+bw+'x'+bh};"
+            "const img=c2.getImageData(bx,by,bw,bh).data;"
+            "const near=(px,py)=>{px=Math.round(px)-bx;py=Math.round(py)-by;"
+            "for(let du=-2;du<=2;du++)for(let dv=-2;dv<=2;dv++){const x=px+du,y=py+dv;"
+            "if(x<0||y<0||x>=bw||y>=bh)continue;const i=(y*bw+x)*4;"
+            "if(Math.abs(img[i]-180)<=14&&Math.abs(img[i+1]-255)<=14&&Math.abs(img[i+2]-160)<=14)return true;}return false;};"
+            "let hits=0;const N=72;for(let i=0;i<N;i++){const a=2*Math.PI*i/N;"
+            "if(near(cx+R*Math.cos(a),cy+R*Math.sin(a)))hits++;}return {hits,N};})()"
+        )
+        base = self.evaluate(probe)
+        if not isinstance(base, dict) or "hits" not in base:
+            raise Fail(f"ghost probe returned {base!r}")
+        if base["hits"] >= 10:
+            raise Fail(f"ghost already visible before hover: {base['hits']}/{base['N']} sample hits")
+        self.ca("Input.dispatchMouseEvent", json.dumps({"type": "mouseMoved", "x": point["x"], "y": point["y"]}))
+        got = self.poll(probe, lambda v: isinstance(v, dict) and v.get("hits", 0) >= 40,
+                        "range ghost circle on ring hover", timeout=8)
+        print(f"  ok: range ghost drawn on hover ({got['hits']}/{got['N']} circle samples matched #b4ffa0)")
+        self.ca("Input.dispatchMouseEvent", json.dumps({"type": "mouseMoved", "x": 4, "y": 4}))
 
     def flow3_plant_defender(self):
         self.step = "flow3: plant defender on fairy ring"
@@ -281,8 +322,13 @@ class Runner:
             raise Fail(f"cannot place trusted click: {point['err']}")
         before = int(self.evaluate(self.text_of("#manaText")))
         self.click(point["x"], point["y"])
-        # Relative drop: planting costs TREE_COST mana, far outpacing regen.
-        self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit() and int(v) <= before - TREE_COST + 5, f"mana drops from {before} by ~{TREE_COST}", timeout=10)
+        # Planting spends TREE_COST mana instantly; regen (5.2/s) only adds.
+        # A net drop of >= half the cost therefore proves the spend while
+        # staying true on ANY read within ~4.8s of the click — the old
+        # `before - TREE_COST + 5` window assumed a sub-second first read and
+        # went false-negative whenever the pre-plant regen wait ran long
+        # (RP-pyvp2r: the ghost probe adds a few seconds of regen upstream).
+        self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit() and int(v) <= before - TREE_COST // 2, f"mana drops from {before} by ~{TREE_COST}", timeout=10)
         print(f"  ok: defender planted, mana {before} -> {self.evaluate(self.text_of('#manaText'))}")
 
     def flow4_battle_resolves(self):
@@ -337,12 +383,13 @@ class Runner:
 
     def assert_fit(self, what):
         """Layout fits the pinned viewport: no page overflow, every toolbar
-        card fully on-screen (reachable), canvas and wrap inside the window."""
+        card fully on-screen (reachable), canvas and wrap inside the window.
+        Also asserts the RP-pyvp2r role line is present on every card."""
         fit = self.evaluate(
             "(()=>{const iw=window.innerWidth,ih=window.innerHeight;"
             "const sw=document.documentElement.scrollWidth;"
             "const btns=[...document.querySelectorAll('.tool-button')].map((b)=>{const r=b.getBoundingClientRect();"
-            "return {text:b.textContent.slice(0,24),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
+            "return {text:b.textContent.slice(0,24),role:(b.querySelector('.tool-button__role')||{textContent:''}).textContent.trim(),l:r.left,t:r.top,r:r.right,b:r.bottom};});"
             "const c=document.getElementById('gameCanvas').getBoundingClientRect();"
             "const w=document.getElementById('canvasWrap').getBoundingClientRect();"
             "return {iw,ih,sw,cards:btns,canvas:{l:c.left,t:c.top,r:c.right,b:c.bottom},wrap:{l:w.left,t:w.top,r:w.right,b:w.bottom}};})()"
@@ -355,10 +402,13 @@ class Runner:
                if b["l"] < -1 or b["t"] < -1 or b["r"] > fit["iw"] + 1 or b["b"] > fit["ih"] + 1]
         if off:
             raise Fail(f"{what}: cards unreachable at {fit['iw']}x{fit['ih']}: {off}")
+        bare = [b["text"] for b in fit["cards"] if not b.get("role")]
+        if bare:
+            raise Fail(f"{what}: cards missing a role line (RP-pyvp2r): {bare}")
         for name, box in (("#gameCanvas", fit["canvas"]), ("#canvasWrap", fit["wrap"])):
             if box["l"] < -1 or box["t"] < -1 or box["r"] > fit["iw"] + 1 or box["b"] > fit["ih"] + 1:
                 raise Fail(f"{what}: {name} exceeds viewport at {fit['iw']}x{fit['ih']}: {box}")
-        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable, canvas+wrap inside viewport ({what})")
+        print(f"  ok: fit at {fit['iw']}x{fit['ih']} — scrollWidth {fit['sw']}, {len(fit['cards'])} cards reachable with role lines, canvas+wrap inside viewport ({what})")
 
     def flow5_fit_and_controls(self):
         self.step = "flow5: fit at 940x850, Replay refits canvas, pause/mute reachable"
