@@ -8,7 +8,9 @@ assets), campaign-map entry, planting a defender on a fairy ring, and a full
 battle resolution on the deterministic hand-test level, plus the RP-vebqyv
 fit guarantees at a pinned 940x850 window: no page overflow, every toolbar
 card reachable, canvas/canvasWrap inside the viewport, pause and mute
-reachable, and the canvas refitting after Replay.
+reachable, and the canvas refitting after Replay. Flow 6 (RP-a7h9z5) scripts
+a tap at a mana flower's exact center (?debug state hook) and asserts the
+pickup lands with its +25 mana.
 
 Rules the script follows:
   1. Sense, act, sense again — after every action the state it should have
@@ -440,6 +442,39 @@ class Runner:
         self.poll(self.text_of("#muteButton"), lambda v: v == "\U0001F50A", "mute button toggles back to \U0001F50A")
         print("  ok: pause and mute reachable and functional")
 
+    # ---- mana flower taps (RP-a7h9z5) ---------------------------------------
+
+    def flow6_flower_tap(self):
+        self.step = "flow6: mana flower tap lands at center, +25 mana"
+        print("[6] scripted tap at a flower's center collects it (RP-a7h9z5)")
+        self.navigate(f"{SITE}?level={HANDTEST_ID}&debug")
+        self.poll("document.readyState", lambda v: v == "complete", "document.readyState==complete")
+        self.poll(self.visible("#gameScreen"), lambda v: v is True, "#gameScreen visible (?level entry)", timeout=30)
+        # ?debug exposes the live battle state (src/campaign.js window.__fr) so
+        # the tap targets the flower's exact world center.
+        self.poll("typeof window.__fr?.getState", lambda v: v == "function", "window.__fr debug hook present", timeout=10)
+        flower = self.poll(
+            "(()=>{const f=window.__fr.getState()?.flowers?.[0];return f?{x:f.x,y:f.y}:null})()",
+            lambda v: isinstance(v, dict), "a mana flower to spawn (first spawn ~6s)", timeout=30,
+        )
+        self.screenshot("flower-visible")
+        mana_before = int(self.evaluate(self.text_of("#manaText")))
+        point = self.canvas_click_point(flower["x"], flower["y"])
+        if "err" in point:
+            raise Fail(f"cannot tap flower: {point['err']}")
+        self.click(point["x"], point["y"])
+        self.poll(
+            f"(()=>{{const s=window.__fr.getState();"
+            f"return !s.flowers.some(f=>Math.hypot(f.x-{flower['x']},f.y-{flower['y']})<1);}})()",
+            lambda v: v is True, "tapped flower removed from state", timeout=5,
+        )
+        mana_after = int(self.evaluate(self.text_of("#manaText")))
+        # The tap pays +25; reads may straddle ~2s of passive regen (+10.4), so
+        # a net +12 still proves the pickup landed.
+        if mana_after < mana_before + 12:
+            raise Fail(f"flower tap did not pay mana: before {mana_before}, after {mana_after}")
+        print(f"  ok: flower collected at ({flower['x']:.0f},{flower['y']:.0f}), mana {mana_before} -> {mana_after}")
+
     # ---- lifecycle ---------------------------------------------------------
 
     def run(self):
@@ -468,6 +503,8 @@ class Runner:
             self.flow4_battle_resolves()
             self.check_events()
             self.flow5_fit_and_controls()
+            self.check_events()
+            self.flow6_flower_tap()
             self.check_events()
             print("\nPASS: Forest Rescue on GitHub Pages is working end to end.")
         except Fail as e:
