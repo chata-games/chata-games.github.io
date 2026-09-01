@@ -10,7 +10,11 @@ fit guarantees at a pinned 940x850 window: no page overflow, every toolbar
 card reachable, canvas/canvasWrap inside the viewport, pause and mute
 reachable, and the canvas refitting after Replay. Flow 6 (RP-a7h9z5) scripts
 a tap at a mana flower's exact center (?debug state hook) and asserts the
-pickup lands with its +25 mana.
+pickup lands with its +25 mana. Flow 7 (RP-k55mkt) scripts every rejected
+action on Meadows' Edge and asserts each one SPECS: the selection-scoped
+green tint on plantable rings (canvas-pixel differential), "Not enough mana",
+"Needs an open-path ring", the paused-overlay hint floater, the empty-ground
+hint, and a floating +N mana bounty on kills (sampled through flow 4's battle).
 
 Rules the script follows:
   1. Sense, act, sense again — after every action the state it should have
@@ -55,6 +59,19 @@ HANDTEST_RINGS = [(831, 503), (1025, 211), (1304, 332)]  # three fairy rings
 TREE_COST = 50  # Magic Tree mana cost
 START_MANA = 150
 START_HEARTS = "\u2665" * 5
+
+# RP-k55mkt rejection-feedback probes (compiled facts of 01-meadows-edge:
+# 6 beside-path rings + on-path ring-onpath-6, unlocks sprig + bramble, no
+# spell). The probe ring sits clear of the centered Start-Wave button, which
+# is pressed before any canvas taps (it swallows clicks near the canvas center).
+MEADOWS_TINT_RING = (1269, 367)  # ring-7, stays free — green-tint + wrong-type target
+MEADOWS_PLANT_RINGS = [(277, 430), (129, 623)]  # ring-92, ring-95 — real plants (regression guard)
+MEADOWS_FREE_RING = (787, 498)  # ring-43, free — "Not enough mana" target
+MEADOWS_EMPTY_SPOT = (1100, 820)  # no ring, no flower — rejected plant target
+MANA_REASON = "Not enough mana"
+WRONG_RING_REASON = "Needs an open-path ring"
+EMPTY_GROUND_REASON = "Tap a fairy ring to plant"
+PAUSED_REASON = "Paused \u2014 resume to plant"
 
 
 class Fail(Exception):
@@ -201,6 +218,50 @@ class Runner:
             time.sleep(0.5)
         return last
 
+    def floats(self):
+        """Live floating texts of the battle (RP-k55mkt reasons and +N bounties)."""
+        return self.evaluate("window.__fr?.getState()?.floatTexts?.map((f) => f.text) || []")
+
+    def poll_float(self, text, what, timeout=4):
+        got = self.poll(
+            "window.__fr?.getState()?.floatTexts?.map((f) => f.text) || []",
+            lambda texts: isinstance(texts, list) and text in texts,
+            what,
+            timeout=timeout,
+        )
+        print(f"  ok: floating reason {text!r} visible ({what})")
+        return got
+
+    def wait_flower_clear(self, wx, wy, what):
+        """Block until no mana flower's tap hitbox overlaps (wx, wy), so a
+        scripted rejection tap cannot be swallowed by an accidental pickup."""
+        self.poll(
+            f"(()=>{{const s=window.__fr?.getState?.();const ds=(s?.flowers||[])"
+            f".map((f)=>Math.hypot(f.x-{wx},f.y-{wy}));return ds.length?Math.min(...ds):9999;}})()",
+            lambda d: isinstance(d, (int, float)) and d > 60,
+            f"no flower near {what}",
+            timeout=12,
+        )
+
+    def tint_probe(self, wx, wy):
+        """RP-k55mkt: mean(green - red) over an 18px box at a ring's center —
+        the selection-scoped tint fill rgba(141,255,156,0.18) lifts it; the
+        static dashed ring spot sits at the disc's rim, outside the box."""
+        return (
+            "(()=>{if(window.devicePixelRatio!==1)return{err:'dpr='+window.devicePixelRatio};"
+            "const cv=document.getElementById('gameCanvas');const c2=cv.getContext('2d');"
+            "const wrap=document.getElementById('canvasWrap').getBoundingClientRect();"
+            "const w=Math.max(320,Math.floor(wrap.width)),h=Math.max(220,Math.floor(wrap.height));"
+            f"const s=Math.min(w/{WORLD_W},h/{WORLD_H});"
+            f"const ox=(w-{WORLD_W}*s)/2,oy=(h-{WORLD_H}*s)/2;"
+            f"const cx=ox+{wx}*s,cy=oy+{wy}*s;"
+            "const bx=Math.max(0,Math.floor(cx-9)),by=Math.max(0,Math.floor(cy-9));"
+            "if(bx+18>cv.width||by+18>cv.height)return{err:'probe box out of canvas'};"
+            "const img=c2.getImageData(bx,by,18,18).data;"
+            "let gmr=0;for(let i=0;i<img.length;i+=4)gmr+=img[i+1]-img[i];"
+            "return {gmr:gmr/(img.length/4)};})()"
+        )
+
     def gate_state(self):
         """RP-48sjgh wave gate probe: HUD wave text + Start-Wave visibility."""
         return ('(()=>({wave:document.querySelector("#waveText").textContent,'
@@ -335,7 +396,7 @@ class Runner:
 
     def flow4_battle_resolves(self):
         self.step = "flow4: battle resolves end to end"
-        url = f"{SITE}?level={HANDTEST_ID}"
+        url = f"{SITE}?level={HANDTEST_ID}&debug"  # debug: floatTexts bounty probe (RP-k55mkt)
         print(f"[4] full battle on {HANDTEST_NAME!r} ({url})")
         self.navigate(url)
         self.poll("document.readyState", lambda v: v == "complete", "document.readyState==complete")
@@ -368,18 +429,33 @@ class Runner:
         # must have lost its "hidden" class too. #replayButton never carries a
         # hidden class of its own (hiding is via the #endOverlay ancestor), so
         # replay visibility is derived from the overlay's visibility.
-        hud = self.poll(
-            '(()=>({endVisible:!document.querySelector("#endOverlay").classList.contains("hidden"),'
-            'end:document.querySelector("#endTitle").textContent}))()',
-            lambda v: isinstance(v, dict) and v.get("endVisible") is True and v.get("end") in ("Victory", "Game Over"),
-            "#endOverlay visible with title (Victory or Game Over)",
-            timeout=240,
-        )
+        # RP-k55mkt: while the battle runs, every kill must pay a VISIBLE mana
+        # bounty — the loop watches floatTexts for a "+<amount>" float on every
+        # read, so even a kill more than a float-lifetime before resolution is
+        # caught.
+        kill_float = False
+        hud = None
+        deadline = time.monotonic() + 240
+        while True:
+            if time.monotonic() > deadline:
+                raise Fail(f"timed out after 240s waiting for end overlay; last observed {hud!r}")
+            hud = self.evaluate(
+                '(()=>({endVisible:!document.querySelector("#endOverlay").classList.contains("hidden"),'
+                'end:document.querySelector("#endTitle").textContent,'
+                'floats:window.__fr?.getState()?.floatTexts?.map((f) => f.text) || []}))()'
+            )
+            if isinstance(hud, dict) and any(re.fullmatch(r"\+\d+", str(t)) for t in hud.get("floats", [])):
+                kill_float = True
+            if isinstance(hud, dict) and hud.get("endVisible") is True and hud.get("end") in ("Victory", "Game Over"):
+                break
+            time.sleep(0.5)
+        if not kill_float:
+            raise Fail("RP-k55mkt: no floating mana bounty (+N) observed on kills during the battle")
         outcome = hud["end"]
         replay_visible = self.evaluate(self.visible("#endOverlay"))
         msg = self.evaluate(self.text_of("#endMessage"))
         self.screenshot("final-outcome")
-        print(f"  ok: battle resolved -> {outcome!r} ({msg}); overlay visible: {hud['endVisible']}; replay visible: {replay_visible}")
+        print(f"  ok: battle resolved -> {outcome!r} ({msg}); overlay visible: {hud['endVisible']}; replay visible: {replay_visible}; kill bounty float seen: {kill_float}")
 
     # ---- fit guarantees (RP-vebqyv) ----------------------------------------
 
@@ -475,6 +551,109 @@ class Runner:
             raise Fail(f"flower tap did not pay mana: before {mana_before}, after {mana_after}")
         print(f"  ok: flower collected at ({flower['x']:.0f},{flower['y']:.0f}), mana {mana_before} -> {mana_after}")
 
+    # ---- rejection feedback (RP-k55mkt) -------------------------------------
+
+    def flow7_rejection_feedback(self):
+        self.step = "flow7: rejected actions speak (RP-k55mkt)"
+        print(f"[7] rejection feedback on {LEVEL1_NAME!r} ({SITE}?level={LEVEL1_ID}&debug)")
+        self.navigate(f"{SITE}?level={LEVEL1_ID}&debug")
+        self.poll("document.readyState", lambda v: v == "complete", "document.readyState==complete")
+        self.poll(self.visible("#gameScreen"), lambda v: v is True, "#gameScreen visible (?level entry)", timeout=30)
+        self.expect_eq(self.evaluate(self.text_of("#levelTitle")), LEVEL1_NAME, "level title")
+        self.poll(self.text_of("#manaText"), lambda v: isinstance(v, str) and v.isdigit(), "live mana value", timeout=10)
+        # Prep phase (wave gate untouched — no enemies, deterministic mana).
+        self.holds(self.gate_state(), lambda v: isinstance(v, dict) and v.get("startVisible") is True,
+                   "prep phase holds behind Start-Wave", seconds=1.5)
+
+        # 1) Selection-scoped green tint: with the default sprig selected, a
+        #    free beside-path ring is tinted; switching to the on-path bramble
+        #    (which may NOT go there) untints it. Differential canvas-pixel read.
+        self.wait_flower_clear(*MEADOWS_TINT_RING, "tint probe ring")
+        probe = self.evaluate(self.tint_probe(*MEADOWS_TINT_RING))
+        if not isinstance(probe, dict) or "gmr" not in probe:
+            raise Fail(f"tint probe returned {probe!r}")
+        with_tint = probe["gmr"]
+        self.screenshot("valid-ring-tint")  # by-eye evidence: only plantable rings glow
+        self.js_click(".toolbar .tool-button:nth-child(2)")  # Thornvine Bramble (on-path)
+        without_tint = self.poll(
+            self.tint_probe(*MEADOWS_TINT_RING),
+            lambda v: isinstance(v, dict) and "gmr" in v and with_tint - v["gmr"] >= 3,
+            "green tint untints under the on-path bramble",
+            timeout=6,
+        )["gmr"]
+        print(f"  ok: valid-ring tint follows the selection (gmr {with_tint:.1f} -> {without_tint:.1f} under bramble)")
+        self.js_click(".toolbar .tool-button:nth-child(1)")  # back to Sprig Sentinel
+
+        # 2) Two real plants prove planting still works (state-read back, not
+        #    assumed), then the Start-Wave button is pressed so it stops
+        #    overlapping canvas clicks for the rest of the flow.
+        for i, (wx, wy) in enumerate(MEADOWS_PLANT_RINGS):
+            self.wait_flower_clear(wx, wy, f"plant ring {i}")
+            point = self.canvas_click_point(wx, wy)
+            if "err" in point:
+                raise Fail(f"cannot place trusted click (plant ring {i}): {point['err']}")
+            self.click(point["x"], point["y"])
+            time.sleep(0.3)
+        planted = self.poll("window.__fr?.getState()?.defenders?.length ?? 0", lambda n: n == 2, "two sprigs planted", timeout=8)
+        print(f"  ok: two sprigs planted (defenders on ring: {planted})")
+        self.js_click("#startWaveButton")
+        self.poll(self.gate_state(), lambda v: isinstance(v, dict) and v.get("startVisible") is False, "#startWaveButton hidden after press")
+
+        # 3) No mana: pin mana below the sprig cost through the debug hook (the
+        #    public __fr object only exposes getState(), so write through the
+        #    live state it returns — the passive 5.2/s regen makes a
+        #    spending-drain racy), then one tap on the still-free ring must
+        #    float "Not enough mana".
+        self.wait_flower_clear(*MEADOWS_FREE_RING, "mana-rejection ring")
+        self.evaluate("window.__fr.getState().mana = 10")
+        # 9 spare hearts (not 99 — a 99-heart HUD string wraps the bar and
+        # buries the pause button) keep an in-flow wave from ending the level
+        # while the rejection steps run; survival itself is flow4's business.
+        self.evaluate("window.__fr.getState().hearts = 9")
+        point = self.canvas_click_point(*MEADOWS_FREE_RING)
+        if "err" in point:
+            raise Fail(f"cannot place trusted click (free ring): {point['err']}")
+        self.click(point["x"], point["y"])
+        self.poll_float(MANA_REASON, "rejected plant without mana")
+
+        # 3) Wrong ring type: the on-path bramble on the free beside-path ring
+        #    floats "Needs an open-path ring" (placement outranks the mana purse).
+        self.js_click(".toolbar .tool-button:nth-child(2)")
+        self.wait_flower_clear(*MEADOWS_TINT_RING, "wrong-type ring")
+        point = self.canvas_click_point(*MEADOWS_TINT_RING)
+        if "err" in point:
+            raise Fail(f"cannot place trusted click (wrong-type ring): {point['err']}")
+        self.click(point["x"], point["y"])
+        self.poll_float(WRONG_RING_REASON, "rejected plant on wrong ring type")
+        self.screenshot("rejection-feedback")  # by-eye evidence: shake + reason float
+
+        # 4) Paused taps get the overlay hint floater (the overlay swallows
+        #    canvas floats, so this one is DOM, above the backdrop).
+        self.js_click("#pauseButton")
+        self.poll(self.visible("#pauseOverlay"), lambda v: v is True, "#pauseOverlay visible")
+        self.click(100, 300)  # backdrop, clear of the centered panel
+        self.poll(
+            'document.querySelectorAll(".reject-float").length',
+            lambda n: isinstance(n, int) and n >= 1,
+            "paused hint floater appears",
+        )
+        hint = self.evaluate('document.querySelector(".reject-float")?.textContent')
+        if hint != PAUSED_REASON:
+            raise Fail(f"paused hint text: expected {PAUSED_REASON!r}, observed {hint!r}")
+        print(f"  ok: paused tap floats {PAUSED_REASON!r}")
+        self.js_click("#resumeButton")
+        self.poll(self.visible("#pauseOverlay"), lambda v: v is False, "#pauseOverlay hidden after resume")
+        self.poll('document.querySelectorAll(".reject-float").length', lambda n: n == 0, "hint floater removed after animation", timeout=4)
+
+        # 5) A tap on bare ground (no ring, no flower) is a rejected plant too.
+        self.wait_flower_clear(*MEADOWS_EMPTY_SPOT, "empty-ground tap")
+        point = self.canvas_click_point(*MEADOWS_EMPTY_SPOT)
+        if "err" in point:
+            raise Fail(f"cannot place trusted click (empty ground): {point['err']}")
+        self.click(point["x"], point["y"])
+        self.poll_float(EMPTY_GROUND_REASON, "rejected plant on empty ground")
+        print("  ok: every rejected action spoke (RP-k55mkt)")
+
     # ---- lifecycle ---------------------------------------------------------
 
     def run(self):
@@ -505,6 +684,8 @@ class Runner:
             self.flow5_fit_and_controls()
             self.check_events()
             self.flow6_flower_tap()
+            self.check_events()
+            self.flow7_rejection_feedback()
             self.check_events()
             print("\nPASS: Forest Rescue on GitHub Pages is working end to end.")
         except Fail as e:
