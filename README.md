@@ -115,6 +115,12 @@ This master repository can be used to:
 - **Serve the landing page** showing all available games
 - **Maintain unified documentation** and standards
 
+## GitHub Pages
+
+The root workflow publishes the game index at https://chata-games.github.io/ and each game under its repository name. Forest Rescue runs at https://chata-games.github.io/forest-rescue/.
+
+Set **Settings → Pages → Source** to **GitHub Actions** once for this repository. The workflow builds Forest Rescue and Trolluv Sklep, then stages the other static games without their development files.
+
 ## 📝 Contributing
 
 Each game has its own contribution guidelines. Please refer to the individual game repositories for specific contribution instructions.
