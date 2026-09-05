@@ -1,0 +1,11 @@
+Retro written to `docs/retros/skill-name-setup-repo-skills-location-home.md`.
+
+**Top three findings**
+
+1. **"Verified end to end" was true and useless** — the flow-4 outcome assertion accepted *Game Over*, so the standing regression stayed green while defenders never fired a single shot; only the user's "Did you actually try to play the game?" (83e23c8e) surfaced an unplayable game the skill's assertion-only, no-screenshot doctrine structurally could not see.
+2. **Assertion robustness on a live game loop had to be derived twice** — hidden `#endOverlay` static text false-passed battle resolution (caught only by a workflow verify agent, b5b32c49), and exact-mana assertions raced regen (331fbab2); the cdp-cookbook carries none of this.
+3. **~20 calls spent deriving environment facts that will recur** — background-tab rAF throttling, the Xvfb one-window-per-agent workaround, and tab-creation addressing in multi-tab instances (0399e382–8beea039); the cookbook documents tab addressing but not creation, throttling, or Xvfb.
+
+**Proposal counts**: 3 skill-update (chrome-agent-testing SKILL.md qualitative-pass guidance; two cdp-cookbook sections; rohrpost Permission-denied fallback), 1 rule-update (AGENTS.md `## Subagent workflows`: teardown mandate, follow-up reconciliation, end-of-run checks), 1 acknowledge. All carry exact proposed text in the retro.
+
+**Could not decide without you**: whether the Pages smoke script should gain a lethality assertion (shots fired/kills) — it's the one class the current scripts still can't see; and whether AGENTS.md vs a future dedicated skill is the right home for workflow-authoring rules.
