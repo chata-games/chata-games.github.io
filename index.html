@@ -3,368 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chata Games – Sbírka her</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-dark: #2b1a4e;
-            --bg-darker: #1d1138;
-            --accent: #f5a623;
-            --accent-soft: #ffd27f;
-            --card-bg: #362058;
-            --card-border: rgba(255, 210, 127, 0.25);
-            --text-light: #f3ecff;
-            --text-muted: #c9b8e8;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(180deg, #4a2a7a 0%, var(--bg-dark) 40%, var(--bg-darker) 100%);
-            min-height: 100vh;
-            color: var(--text-light);
-        }
-
-        .hero {
-            position: relative;
-            height: 420px;
-            background: url('assets/hero.webp') center 35% / cover no-repeat;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(29, 17, 56, 0.15) 0%, rgba(29, 17, 56, 0) 40%, rgba(74, 42, 122, 0.95) 100%);
-        }
-
-        .hero-inner {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding-bottom: 30px;
-        }
-
-        h1 {
-            font-size: 3.5em;
-            text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
-            letter-spacing: 1px;
-        }
-
-        .subtitle {
-            font-size: 1.3em;
-            margin-top: 6px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-            color: var(--accent-soft);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 40px;
-        }
-
-        .description {
-            text-align: center;
-            font-size: 1.1em;
-            color: var(--text-muted);
-            max-width: 640px;
-            margin: 30px auto 0;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin: 40px 0 50px;
-            text-align: center;
-        }
-
-        .stat-item h3 {
-            font-size: 2.5em;
-            margin-bottom: 5px;
-            color: var(--accent);
-        }
-
-        .stat-item p {
-            color: var(--text-muted);
-        }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .game-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .game-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55), 0 0 25px rgba(245, 166, 35, 0.15);
-        }
-
-        .game-art {
-            position: relative;
-            height: 210px;
-            overflow: hidden;
-        }
-
-        .game-art img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center 30%;
-            display: block;
-            transition: transform 0.4s ease;
-        }
-
-        .game-card:hover .game-art img {
-            transform: scale(1.06);
-        }
-
-        .game-art::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(54, 32, 88, 0) 60%, rgba(54, 32, 88, 0.9) 100%);
-        }
-
-        .game-art h2 {
-            position: absolute;
-            bottom: 10px;
-            left: 16px;
-            right: 16px;
-            z-index: 1;
-            font-size: 1.5em;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-        }
-
-        .game-content {
-            padding: 18px 20px 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-content p {
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            font-size: 0.95em;
-            flex: 1;
-        }
-
-        .game-links {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.9em;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, #e2681f 100%);
-            color: #2b1a4e;
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            transform: scale(1.02);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--accent-soft);
-            border: 2px solid var(--accent-soft);
-        }
-
-        .btn-secondary:hover {
-            background: var(--accent-soft);
-            color: #2b1a4e;
-        }
-
-        footer {
-            text-align: center;
-            color: var(--text-muted);
-            padding-top: 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            font-size: 0.9em;
-        }
-
-        footer a {
-            color: var(--accent-soft);
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2.4em;
-            }
-
-            .hero {
-                height: 300px;
-            }
-
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <meta name="theme-color" content="#061917">
+    <meta name="description" content="Šest originálních her od Chata Games. Vydej se za dobrodružstvím, zachraň kouzelný les nebo vyhraj fotbalový pohár. Zdarma přímo v prohlížeči.">
+    <title>Chata Games – Malé hry. Velká dobrodružství.</title>
+    <link rel="stylesheet" href="assets/homepage.css">
 </head>
 <body>
-    <div class="hero">
-        <div class="hero-inner">
-            <h1>🎮 Chata Games</h1>
-            <p class="subtitle">Sbírka interaktivních her</p>
+    <a class="skip-link" href="#hry">Přejít na hry</a>
+    <header class="site-header">
+        <nav class="container navigation" aria-label="Hlavní navigace">
+            <a class="brand" href="./"><img src="assets/cabin-hero-v2.webp" alt="" width="44" height="44">Chata Games</a>
+            <div class="nav-links"><a href="#hry">Naše hry</a><a href="#o-projektu">O projektu</a><a href="https://github.com/chata-games">GitHub <span aria-hidden="true">↗</span></a></div>
+        </nav>
+    </header>
+    <main class="container">
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-copy">
+                <p class="eyebrow">Malé hry. Velká dobrodružství.</p>
+                <h1 id="hero-title">Z chaty do<br>jiného světa.</h1>
+                <p class="hero-description">Sbírka originálních her pro chvíle odpočinku.<br class="desktop-break"> Hraj přímo v prohlížeči, kdykoli a kdekoli.</p>
+                <a class="button hero-button" href="#hry">Vybrat si hru <span aria-hidden="true">→</span></a>
+            </div>
+            <img class="hero-image" src="assets/cabin-hero-v2.webp" alt="Útulná horská chata se zářícími okny pod hvězdnou oblohou" width="1373" height="1145" fetchpriority="high">
+        </section>
+        <ul class="features" aria-label="O našich hrách">
+            <li><span aria-hidden="true">★</span>6 originálních her</li>
+            <li><span aria-hidden="true">◎</span>Přímo v prohlížeči</li>
+            <li><span aria-hidden="true">♥</span>Zdarma a open source</li>
+        </ul>
+        <section class="collection" id="hry" aria-labelledby="games-title">
+            <div class="section-heading">
+                <h2 id="games-title">Jaké dobrodružství si vybereš?</h2>
+                <p class="eyebrow">Kolekce Chata Games</p>
+            </div>
+            <div class="games-grid">
+                <article class="game-card" aria-labelledby="trolluv-sklep-title">
+                    <a class="game-art" href="trolluv-sklep/" tabindex="-1" aria-hidden="true"><img src="assets/trolluv-sklep.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Dobrodružství · Plížení</p>
+                        <h3 id="trolluv-sklep-title">Trollův sklep</h3>
+                        <p class="game-description">Přelsti slepého trolla, rozlušti goblinovu šifru a uteč ze sklepa s pokladem.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="trolluv-sklep/" aria-label="Hrát Trollův sklep">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/trolluv-sklep" aria-label="Trollův sklep na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="game-card" aria-labelledby="unikovka-title">
+                    <a class="game-art" href="unikovka/" tabindex="-1" aria-hidden="true"><img src="assets/unikovka-night.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Dobrodružství · Hádanky</p>
+                        <h3 id="unikovka-title">Únikovka</h3>
+                        <p class="game-description">Propliž se z chaty, dojeď do Rožnova a zachraň snídani. Deset kapitol před budíkem.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="unikovka/" aria-label="Hrát Únikovka">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/unikovka" aria-label="Únikovka na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="game-card" aria-labelledby="daligame-title">
+                    <a class="game-art" href="daligame/" tabindex="-1" aria-hidden="true"><img src="assets/daligame.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Sport · Arkáda</p>
+                        <h3 id="daligame-title">Dali Game</h3>
+                        <p class="game-description">Vyraz s Laminem Yamalem na mistrovství světa. Projdi vyřazovacím pavoukem a zvedni trofej.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="daligame/" aria-label="Hrát Dali Game">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/daligame" aria-label="Dali Game na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="game-card" aria-labelledby="forest-rescue-title">
+                    <a class="game-art" href="forest-rescue/" tabindex="-1" aria-hidden="true"><img src="assets/forest-rescue.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Strategie · Obrana lesa</p>
+                        <h3 id="forest-rescue-title">Forest Rescue</h3>
+                        <p class="game-description">Sázej magické stromy a zastav dřevorubce. Ubraň srdce kouzelného pralesa ve všech osmi vlnách.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="forest-rescue/" aria-label="Hrát Forest Rescue">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/forest-rescue" aria-label="Forest Rescue na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="game-card" aria-labelledby="grunts-way-home-title">
+                    <a class="game-art" href="grunts-way-home/" tabindex="-1" aria-hidden="true"><img src="assets/grunts-way-home.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Dobrodružství · Jazykové hádanky</p>
+                        <h3 id="grunts-way-home-title">Grunt: Cesta domů</h3>
+                        <p class="game-description">Pomoz pravěkému muži najít cestu domů. Nejdřív ale musíš rozluštit jeho neznámou řeč.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="grunts-way-home/" aria-label="Hrát Grunt: Cesta domů">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/grunts-way-home" aria-label="Grunt: Cesta domů na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="game-card" aria-labelledby="tvojekariera-title">
+                    <a class="game-art" href="tvojekariera/" tabindex="-1" aria-hidden="true"><img src="assets/tvojekariera.webp" alt="" loading="lazy" width="768" height="512"></a>
+                    <div class="game-content">
+                        <p class="eyebrow genre">Sport · Kariéra</p>
+                        <h3 id="tvojekariera-title">Tvoje kariéra</h3>
+                        <p class="game-description">Začni jako neznámý šestnáctiletý kluk. Vybojuj si místo v reprezentaci a sáhni po Zlatém míči.</p>
+                        <div class="game-links">
+                            <a class="button button-small" href="tvojekariera/" aria-label="Hrát Tvoje kariéra">Hrát hru <span aria-hidden="true">↗</span></a>
+                            <a class="source-link" href="https://github.com/chata-games/tvojekariera" aria-label="Tvoje kariéra na GitHubu">GitHub <span aria-hidden="true">↗</span></a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <section class="about" id="o-projektu" aria-labelledby="about-title">
+            <img src="assets/cabin-hero-v2.webp" alt="" width="104" height="104" loading="lazy">
+            <div><h2 id="about-title">O Chata Games</h2><p>Malé hry s velkým srdcem. Od tajemných sklepů přes kouzelné lesy až na fotbalové hřiště.<br>Vyber si svůj svět a pusť se do hraní. Všechny hry jsou zdarma a mají otevřený zdrojový kód.</p></div>
+        </section>
+    </main>
+    <footer class="container site-footer">
+        <div class="footer-top">
+            <div><a class="brand" href="./"><img src="assets/cabin-hero-v2.webp" alt="" width="44" height="44" loading="lazy">Chata Games</a><p>Malé hry. Velká dobrodružství.</p></div>
+            <nav aria-label="Navigace v zápatí"><p class="eyebrow">Navigace</p><a href="#hry">Naše hry</a><a href="#o-projektu">O projektu</a></nav>
+            <div class="footer-source"><p class="eyebrow">Otevřený kód</p><a href="https://github.com/chata-games">Naše hry na GitHubu ↗</a><a href="https://github.com/chata-games/chata-games.github.io">Zdrojový kód webu ↗</a></div>
         </div>
-    </div>
-
-    <div class="container">
-        <p class="description">Prozkoumejte naši sbírku her od organizace Chata Games. Každá hra je zábavný a poutavý zážitek.</p>
-
-        <div class="stats">
-            <div class="stat-item">
-                <h3>6</h3>
-                <p>her</p>
-            </div>
-            <div class="stat-item">
-                <h3>∞</h3>
-                <p>zábavy</p>
-            </div>
-            <div class="stat-item">
-                <h3>🌟</h3>
-                <p>kvalita</p>
-            </div>
-        </div>
-
-        <div class="games-grid">
-            <!-- Trollův sklep -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="assets/trolluv-sklep.webp" alt="Trollův sklep – ilustrace">
-                    <h2>🏰 Trollův sklep</h2>
-                </div>
-                <div class="game-content">
-                    <p>Tři kapitoly pod zříceninou hradu. Přelstěte slepého trolla, vyřešte goblinovu šifru a utečte s pokladem. Plížení, úkryty a kameny na odlákání. Na telefonu, tabletu i počítači.</p>
-                    <div class="game-links">
-                        <a href="trolluv-sklep/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/trolluv-sklep" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Únikovka -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="unikovka/assets/night/midnight-cottage.webp" alt="Únikovka – noční chata v Beskydech">
-                    <h2>🌙 Únikovka</h2>
-                </div>
-                <div class="game-content">
-                    <p>Pro nákup a zpátky potichu. Deset kapitol nočního dobrodružství: propliž se z chaty, dojeď do Rožnova a zachraň snídani před budíkem. Nová grafika, tři obtížnosti a ovládání pro telefon i počítač.</p>
-                    <div class="game-links">
-                        <a href="unikovka/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/unikovka" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dali Game -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="assets/daligame.webp" alt="Dali Game – ilustrace">
-                    <h2>⚽ Dali Game</h2>
-                </div>
-                <div class="game-content">
-                    <p>Camino a la Gloria — arkádový fotbal na mistrovství světa 2026. Hrajte za Lamine Yamala, probojujte se vyřazovacím pavoukem a zvedněte trofej!</p>
-                    <div class="game-links">
-                        <a href="daligame/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/daligame" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Forest Rescue -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="assets/forest-rescue.webp" alt="Forest Rescue – ilustrace">
-                    <h2>🌲 Forest Rescue</h2>
-                </div>
-                <div class="game-content">
-                    <p>Zachraňte kouzelnou džungli! Sázejte magické stromy a zastavte dřevorubce a buldozery dřív, než se dostanou k srdci pralesa. Přežijte všech 8 vln!</p>
-                    <div class="game-links">
-                        <a href="forest-rescue/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/forest-rescue" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Grunts Way Home -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="grunts-way-home/assets/jungle.webp" alt="Grunt: Cesta domů – kouzelná džungle">
-                    <h2>🦴 Grunt: Cesta domů</h2>
-                </div>
-                <div class="game-content">
-                    <p>Pomozte ztracenému pravěkému muži najít cestu domů kouzelnou džunglí. Háček? Nemluvíte stejným jazykem — jeho řeč musíte teprve rozluštit.</p>
-                    <div class="game-links">
-                        <a href="grunts-way-home/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/grunts-way-home" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tvoje kariéra -->
-            <div class="game-card">
-                <div class="game-art">
-                    <img src="assets/tvojekariera.webp" alt="Tvoje kariéra – ilustrace">
-                    <h2>🏆 Tvoje kariéra</h2>
-                </div>
-                <div class="game-content">
-                    <p>Fotbalová kariérní hra: začněte jako neznámý šestnáctiletý kluk a vybudujte si cestu na vrchol — liga, poháry, reprezentace i Zlatý míč.</p>
-                    <div class="game-links">
-                        <a href="tvojekariera/" class="btn btn-primary">Hrát hru</a>
-                        <a href="https://github.com/chata-games/tvojekariera" class="btn btn-secondary" target="_blank">GitHub</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>&copy; 2026 Chata Games. Všechny hry jsou open source a dostupné na GitHubu.</p>
-            <p style="margin-top: 10px; font-size: 0.85em;">Hlavní repozitář: <a href="https://github.com/chata-games/chata-games">github.com/chata-games/chata-games</a></p>
-        </footer>
-    </div>
+        <p class="copyright">© 2026 Chata Games · Všechny hry zdarma a open source.</p>
+    </footer>
 </body>
 </html>

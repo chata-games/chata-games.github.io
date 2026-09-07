@@ -98,11 +98,13 @@ To add a new game to this collection:
 
 ### Updating the Landing Page
 
-The `index.html` file contains the landing page for all games. To add a new game to the page:
+The `index.html` file contains the landing page for all games. Styles are in `assets/homepage.css`. The generated design and image prompts are in `docs/design/`. The page uses local images and needs no build step. To add a new game to the page:
 
 1. Add a new game card in the `<div class="games-grid">` section
 2. Follow the existing card structure with appropriate links and descriptions
 3. Commit and push changes
+
+To preview the page, run `python -m http.server 8000` from the repository root and open `http://localhost:8000`. Game links need initialized submodules and game builds. The homepage artwork is stored in the root `assets/` directory, so it also loads without submodules.
 
 ## 🛠️ Master Repo Features
 
