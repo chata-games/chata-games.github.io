@@ -26,7 +26,7 @@ chata-games/
 | 🦄 Unikovka | Magical adventure game | [unikovka](https://github.com/chata-games/unikovka) |
 | 🎨 Dali Game | Artistic puzzle game | [daligame](https://github.com/chata-games/daligame) |
 | 🌲 Forest Rescue | Rescue animals in the forest | [forest-rescue](https://github.com/chata-games/forest-rescue) |
-| 👹 Grunts Way Home | Epic journey adventure | [grunts-way-home](https://github.com/chata-games/grunts-way-home) |
+| 🦴 Grunt: Cesta domů | Czech language puzzle adventure for ages 8–12 | [grunts-way-home](https://github.com/chata-games/grunts-way-home) |
 | 💼 Tvojekariera | Career building strategy game | [tvojekariera](https://github.com/chata-games/tvojekariera) |
 
 ## 🚀 Getting Started
