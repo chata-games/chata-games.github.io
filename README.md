@@ -13,7 +13,7 @@ chata-games/
 ├── daligame/             # Artistic puzzle game inspired by surrealism
 ├── forest-rescue/        # Help rescue animals in the enchanted forest
 ├── grunts-way-home/      # Epic journey home game
-├── tvojekariera/         # Career building strategy game
+├── tvojekariera/         # Czech football career game
 ├── index.html            # Landing page with game links
 └── README.md             # This file
 ```
@@ -27,7 +27,7 @@ chata-games/
 | 🎨 Dali Game | Artistic puzzle game | [daligame](https://github.com/chata-games/daligame) |
 | 🌲 Forest Rescue | Rescue animals in the forest | [forest-rescue](https://github.com/chata-games/forest-rescue) |
 | 🦴 Grunt: Cesta domů | Czech language puzzle adventure for ages 8–12 | [grunts-way-home](https://github.com/chata-games/grunts-way-home) |
-| 💼 Tvojekariera | Career building strategy game | [tvojekariera](https://github.com/chata-games/tvojekariera) |
+| 💼 Tvojekariera | Czech football career game | [tvojekariera](https://github.com/chata-games/tvojekariera) |
 
 ## 🚀 Getting Started
 
