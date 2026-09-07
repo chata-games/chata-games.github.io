@@ -8,7 +8,7 @@ This repository uses Git submodules to manage all game projects. Each game is a 
 
 ```
 chata-games/
-├── trolluv-sklep/        # Shopping adventure game with troll theme
+├── trolluv-sklep/        # Stealth adventure in a blind troll's cellar
 ├── unikovka/             # Unique adventure with magical creatures
 ├── daligame/             # Artistic puzzle game inspired by surrealism
 ├── forest-rescue/        # Help rescue animals in the enchanted forest
@@ -22,7 +22,7 @@ chata-games/
 
 | Game | Description | Repository |
 |------|-------------|------------|
-| 🛍️ Trolluv Sklep | Shopping adventure with troll theme | [trolluv-sklep](https://github.com/chata-games/trolluv-sklep) |
+| 🏰 Trollův sklep | Czech stealth adventure: solve a riddle, steal the treasure, and escape a blind troll | [trolluv-sklep](https://github.com/chata-games/trolluv-sklep) |
 | 🦄 Unikovka | Magical adventure game | [unikovka](https://github.com/chata-games/unikovka) |
 | 🎨 Dali Game | Artistic puzzle game | [daligame](https://github.com/chata-games/daligame) |
 | 🌲 Forest Rescue | Rescue animals in the forest | [forest-rescue](https://github.com/chata-games/forest-rescue) |
